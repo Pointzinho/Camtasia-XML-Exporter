@@ -1,0 +1,2 @@
+/workspaces/Plugins_SubtitleEdit/Plugins/CamtasiaXmlExporter/PASTA_FINAL/CamtasiaXmlExporter.pdb
+/workspaces/Plugins_SubtitleEdit/Plugins/CamtasiaXmlExporter/PASTA_FINAL/CamtasiaXmlExporter.exe
