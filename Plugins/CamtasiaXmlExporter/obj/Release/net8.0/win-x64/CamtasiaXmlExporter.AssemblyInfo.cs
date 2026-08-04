@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CamtasiaXmlExporter")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+117cedc2d62ce3c778df593bcc4bafb6a3e547bd")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+111b056bf598d2e4fb645ac61f5d4240a1741ade")]
 [assembly: System.Reflection.AssemblyProductAttribute("CamtasiaXmlExporter")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CamtasiaXmlExporter")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

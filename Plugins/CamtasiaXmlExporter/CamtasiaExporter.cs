@@ -119,7 +119,7 @@ namespace CamtasiaXmlExporter
             // ATIVA A LEGENDA NO XML
             xmlSubstituido = Regex.Replace(xmlSubstituido, @"(<rdf:li xmpDM:name=""captionsenabled"" xmpDM:value="")[^""]*("")", "${1}true${2}", RegexOptions.IgnoreCase);
 
-            File.WriteAllText(xmlPath, xmlSubstituido, Encoding.UTF8);
+            File.WriteAllText(xmlPath, xmlSubstituido, new UTF8Encoding(false));
 
             // ATIVA A LEGENDA NO HTML
             AtivarLegendasNoHtml(xmlPath);
