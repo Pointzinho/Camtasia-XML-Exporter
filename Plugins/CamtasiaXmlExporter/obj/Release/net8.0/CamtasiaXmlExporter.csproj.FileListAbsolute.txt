@@ -1,0 +1,15 @@
+/workspaces/Plugins_SubtitleEdit/Plugins/CamtasiaXmlExporter/bin/Release/net8.0/CamtasiaXmlExporter
+/workspaces/Plugins_SubtitleEdit/Plugins/CamtasiaXmlExporter/bin/Release/net8.0/CamtasiaXmlExporter.deps.json
+/workspaces/Plugins_SubtitleEdit/Plugins/CamtasiaXmlExporter/bin/Release/net8.0/CamtasiaXmlExporter.runtimeconfig.json
+/workspaces/Plugins_SubtitleEdit/Plugins/CamtasiaXmlExporter/bin/Release/net8.0/CamtasiaXmlExporter.dll
+/workspaces/Plugins_SubtitleEdit/Plugins/CamtasiaXmlExporter/bin/Release/net8.0/CamtasiaXmlExporter.pdb
+/workspaces/Plugins_SubtitleEdit/Plugins/CamtasiaXmlExporter/obj/Release/net8.0/CamtasiaXmlExporter.GeneratedMSBuildEditorConfig.editorconfig
+/workspaces/Plugins_SubtitleEdit/Plugins/CamtasiaXmlExporter/obj/Release/net8.0/CamtasiaXmlExporter.AssemblyInfoInputs.cache
+/workspaces/Plugins_SubtitleEdit/Plugins/CamtasiaXmlExporter/obj/Release/net8.0/CamtasiaXmlExporter.AssemblyInfo.cs
+/workspaces/Plugins_SubtitleEdit/Plugins/CamtasiaXmlExporter/obj/Release/net8.0/CamtasiaXmlExporter.csproj.CoreCompileInputs.cache
+/workspaces/Plugins_SubtitleEdit/Plugins/CamtasiaXmlExporter/obj/Release/net8.0/CamtasiaXmlExporter.sourcelink.json
+/workspaces/Plugins_SubtitleEdit/Plugins/CamtasiaXmlExporter/obj/Release/net8.0/CamtasiaXmlExporter.dll
+/workspaces/Plugins_SubtitleEdit/Plugins/CamtasiaXmlExporter/obj/Release/net8.0/refint/CamtasiaXmlExporter.dll
+/workspaces/Plugins_SubtitleEdit/Plugins/CamtasiaXmlExporter/obj/Release/net8.0/CamtasiaXmlExporter.pdb
+/workspaces/Plugins_SubtitleEdit/Plugins/CamtasiaXmlExporter/obj/Release/net8.0/CamtasiaXmlExporter.genruntimeconfig.cache
+/workspaces/Plugins_SubtitleEdit/Plugins/CamtasiaXmlExporter/obj/Release/net8.0/ref/CamtasiaXmlExporter.dll
