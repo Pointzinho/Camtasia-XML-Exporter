@@ -184,23 +184,18 @@ namespace CamtasiaXmlExporter
         }
 
         /// <summary>
-        /// Converte uma linha de texto (possivelmente com acentuação, "&amp;", etc.)
-        /// em uma string segura para ser inserida DENTRO de um bloco RTF que por sua vez
-        /// está dentro de um elemento XML.
+        /// Converte uma linha de texto em uma string segura para ser inserida DENTRO
+        /// de um bloco RTF que por sua vez está dentro de um elemento XML.
         ///
-        /// Por que isso é necessário:
-        /// - O _config.xml do Camtasia normalmente é gerado com a flag
-        ///   xmpDM:name="unicodeenabled" value="false". Isso indica que o Smart Player
-        ///   NÃO espera caracteres Unicode "crus" (UTF-8 multi-byte) dentro do bloco RTF.
-        ///   O padrão RTF para caracteres fora do ASCII é o control word "\uN" (código
-        ///   Unicode em decimal) seguido de UM caractere de fallback ASCII, ex: "é" -> "\u233?".
-        ///   Injetar "é" literal (byte cru) onde o player espera "\u233?" pode quebrar o
-        ///   parser RTF interno do Smart Player, derrubando a inicialização inteira do
-        ///   player — o que se manifesta como o erro genérico "problema no acesso a
-        ///   recursos deste vídeo".
-        /// - Também escapamos '&amp;', '&lt;', '&gt;' porque o texto vai direto para dentro
-        ///   de um elemento XML (não está em CDATA), e '\', '{', '}' porque são caracteres
-        ///   de controle do próprio RTF.
+        /// Escapamos '&amp;', '&lt;', '&gt;' porque o texto vai direto para dentro
+        /// de um elemento XML (não está em CDATA), e '\', '{', '}' porque são
+        /// caracteres de controle do próprio RTF.
+        ///
+        /// IMPORTANTE: acentos e outros caracteres não-ASCII (á, ã, ç, é...) são
+        /// mantidos como estão (UTF-8 puro), SEM converter para o escape RTF "\uN?".
+        /// O parser de RTF do TechSmith Smart Player não interpreta esse control
+        /// word — ele imprime "\u233?" literalmente na tela em vez do caractere
+        /// acentuado. O player espera o texto em UTF-8 direto mesmo.
         /// </summary>
         private static string EscaparLinhaParaRtfXml(string linha)
         {
@@ -232,15 +227,6 @@ namespace CamtasiaXmlExporter
                 if (c < 0x20)
                 {
                     // Caracteres de controle não imprimíveis: descarta.
-                    continue;
-                }
-
-                if (c > 0x7E)
-                {
-                    // Fora do ASCII imprimível (acentos, cedilha, "–", "…", etc.)
-                    // Codifica como control word RTF \uN seguido de fallback "?".
-                    int codigoUnicode = (short)c; // RTF exige inteiro decimal com sinal (16 bits)
-                    sb.Append('\\').Append('u').Append(codigoUnicode).Append('?');
                     continue;
                 }
 
