@@ -93,7 +93,8 @@ namespace CamtasiaXmlExporter
 
                 string textoLegenda = match.Groups[4].Value.Trim();
                 string[] linhas = textoLegenda.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-                string rtf = @"{\rtf1 " + string.Join(@"\par ", linhas) + "}";
+                string[] linhasEscapadas = linhas.Select(EscaparLinhaParaRtfXml).ToArray();
+                string rtf = @"{\rtf1 " + string.Join(@"\par ", linhasEscapadas) + "}";
 
                 novosMarkers.AppendLine($"                           <rdf:li><rdf:Description xmpDM:duration=\"{durationMs}\" xmpDM:startTime=\"{startMs}\" tscDM:valign=\"bottom\" tscDM:halign=\"center\"><xmpDM:name><rdf:Alt><rdf:li xml:lang=\"pt-BR\">{rtf}</rdf:li></rdf:Alt></xmpDM:name></rdf:Description></rdf:li>");
             }
@@ -152,6 +153,72 @@ namespace CamtasiaXmlExporter
                     File.WriteAllText(arquivo, conteudoAtualizado, Encoding.UTF8);
                 }
             }
+        }
+
+        /// <summary>
+        /// Converte uma linha de texto (possivelmente com acentuação, "&amp;", etc.)
+        /// em uma string segura para ser inserida DENTRO de um bloco RTF que por sua vez
+        /// está dentro de um elemento XML.
+        ///
+        /// Por que isso é necessário:
+        /// - O _config.xml do Camtasia normalmente é gerado com a flag
+        ///   xmpDM:name="unicodeenabled" value="false". Isso indica que o Smart Player
+        ///   NÃO espera caracteres Unicode "crus" (UTF-8 multi-byte) dentro do bloco RTF.
+        ///   O padrão RTF para caracteres fora do ASCII é o control word "\uN" (código
+        ///   Unicode em decimal) seguido de UM caractere de fallback ASCII, ex: "é" -> "\u233?".
+        ///   Injetar "é" literal (byte cru) onde o player espera "\u233?" pode quebrar o
+        ///   parser RTF interno do Smart Player, derrubando a inicialização inteira do
+        ///   player — o que se manifesta como o erro genérico "problema no acesso a
+        ///   recursos deste vídeo".
+        /// - Também escapamos '&amp;', '&lt;', '&gt;' porque o texto vai direto para dentro
+        ///   de um elemento XML (não está em CDATA), e '\', '{', '}' porque são caracteres
+        ///   de controle do próprio RTF.
+        /// </summary>
+        private static string EscaparLinhaParaRtfXml(string linha)
+        {
+            var sb = new StringBuilder();
+            foreach (char c in linha)
+            {
+                switch (c)
+                {
+                    case '\\':
+                        sb.Append(@"\\");
+                        continue;
+                    case '{':
+                        sb.Append(@"\{");
+                        continue;
+                    case '}':
+                        sb.Append(@"\}");
+                        continue;
+                    case '&':
+                        sb.Append("&amp;");
+                        continue;
+                    case '<':
+                        sb.Append("&lt;");
+                        continue;
+                    case '>':
+                        sb.Append("&gt;");
+                        continue;
+                }
+
+                if (c < 0x20)
+                {
+                    // Caracteres de controle não imprimíveis: descarta.
+                    continue;
+                }
+
+                if (c > 0x7E)
+                {
+                    // Fora do ASCII imprimível (acentos, cedilha, "–", "…", etc.)
+                    // Codifica como control word RTF \uN seguido de fallback "?".
+                    int codigoUnicode = (short)c; // RTF exige inteiro decimal com sinal (16 bits)
+                    sb.Append('\\').Append('u').Append(codigoUnicode).Append('?');
+                    continue;
+                }
+
+                sb.Append(c);
+            }
+            return sb.ToString();
         }
 
         private static long SrtParaMs(string tempoStr)
