@@ -1,2 +1,0 @@
-/workspaces/Plugins_SubtitleEdit/Plugins/CamtasiaXmlExporter/bin/Release/net8.0/win-x64/publish/CamtasiaXmlExporter.pdb
-/workspaces/Plugins_SubtitleEdit/Plugins/CamtasiaXmlExporter/bin/Release/net8.0/win-x64/publish/CamtasiaXmlExporter.exe

@@ -15,6 +15,9 @@ namespace CamtasiaXmlExporter
             string requestPath = args[0];
             if (!File.Exists(requestPath)) return;
 
+            // Movido para fora do try para poder ser usado no catch também
+            string responseFilePath = string.Empty;
+
             try
             {
                 string requestJsonText = File.ReadAllText(requestPath, Encoding.UTF8);
@@ -22,33 +25,35 @@ namespace CamtasiaXmlExporter
                 using (JsonDocument doc = JsonDocument.Parse(requestJsonText))
                 {
                     var root = doc.RootElement;
-                    string responseFilePath = root.GetProperty("responseFilePath").GetString();
-                    
+                    responseFilePath = root.GetProperty("responseFilePath").GetString() ?? string.Empty;
+
                     // Pega a legenda atual formatada como SubRip (SRT)
-                    string srtSubtitle = root.GetProperty("subtitle").GetProperty("subRip").GetString();
+                    string srtSubtitle = root.GetProperty("subtitle").GetProperty("subRip").GetString() ?? string.Empty;
 
                     // Pega a pasta temporária ou o diretório do arquivo original enviado pelo Subtitle Edit
-                    string subtitleFileName = root.TryGetProperty("subtitle", out var subProp) && subProp.TryGetProperty("fileName", out var fnProp) 
-                        ? fnProp.GetString() 
+                    string subtitleFileName = root.TryGetProperty("subtitle", out var subProp) && subProp.TryGetProperty("fileName", out var fnProp)
+                        ? fnProp.GetString() ?? string.Empty
                         : string.Empty;
 
                     // Tenta achar o _config.xml na mesma pasta do arquivo de legenda
                     string xmlPath = string.Empty;
                     if (!string.IsNullOrEmpty(subtitleFileName))
                     {
-                        string directory = Path.GetDirectoryName(subtitleFileName);
-                        string potentialXml = Path.Combine(directory, Path.GetFileNameWithoutExtension(subtitleFileName) + "_config.xml");
-                        if (File.Exists(potentialXml))
+                        string? directory = Path.GetDirectoryName(subtitleFileName);
+                        if (!string.IsNullOrEmpty(directory))
                         {
-                            xmlPath = potentialXml;
+                            string potentialXml = Path.Combine(directory, Path.GetFileNameWithoutExtension(subtitleFileName) + "_config.xml");
+                            if (File.Exists(potentialXml))
+                            {
+                                xmlPath = potentialXml;
+                            }
                         }
                     }
 
                     // Se não encontrou o XML correspondente, informa erro no response
                     if (string.IsNullOrEmpty(xmlPath) || !File.Exists(xmlPath))
                     {
-                        string errResponse = "{\"apiVersion\":1,\"status\":\"error\",\"message\":\"Não foi possível localizar o arquivo _config.xml na mesma pasta da legenda.\"}";
-                        File.WriteAllText(responseFilePath, errResponse, Encoding.UTF8);
+                        EscreverErro(responseFilePath, "Não foi possível localizar o arquivo _config.xml na mesma pasta da legenda.");
                         return;
                     }
 
@@ -62,8 +67,30 @@ namespace CamtasiaXmlExporter
             }
             catch (Exception ex)
             {
-                // Em caso de exceção, envia a mensagem para o Subtitle Edit exibir
-                // Nota: responseFilePath é lido se possível
+                // Em caso de exceção, envia a mensagem para o Subtitle Edit exibir,
+                // em vez de deixar o response.json ausente.
+                EscreverErro(responseFilePath, ex.Message);
+            }
+        }
+
+        private static void EscreverErro(string responseFilePath, string mensagem)
+        {
+            if (string.IsNullOrEmpty(responseFilePath))
+                return;
+
+            try
+            {
+                string errJson = JsonSerializer.Serialize(new
+                {
+                    apiVersion = 1,
+                    status = "error",
+                    message = mensagem
+                });
+                File.WriteAllText(responseFilePath, errJson, Encoding.UTF8);
+            }
+            catch
+            {
+                // Último recurso: se nem isso funcionar, não há mais nada a fazer.
             }
         }
 
