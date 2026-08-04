@@ -107,6 +107,8 @@ namespace CamtasiaXmlExporter
                         <rdf:Seq>
                         </rdf:Seq>
                      </xmpDM:markers>
+                     <tsc:fgColor xmpG:red=""255"" xmpG:green=""255"" xmpG:blue=""255""/>
+                     <tsc:bgColor xmpG:red=""0"" xmpG:green=""0"" xmpG:blue=""0""/>
                   </rdf:Description>
                </rdf:li>";
 
@@ -116,6 +118,21 @@ namespace CamtasiaXmlExporter
             // CORREÇÃO: O sinal de '<' foi removido antes de xmpDM:trackName para encontrar a tag corretamente!
             string padraoRegex = @"(xmpDM:trackName=""Captioning""[^>]*>\s*<xmpDM:markers>\s*<rdf:Seq>)([\s\S]*?)(</rdf:Seq>)";
             string xmlSubstituido = Regex.Replace(xmlConteudo, padraoRegex, $"${{1}}\n{novosMarkers.ToString()}                           ${{3}}");
+
+            // REPARO IDEMPOTENTE: se o bloco "Captioning" já existia (de uma execução
+            // anterior do plugin, antes desta correção) sem as tags tsc:fgColor/tsc:bgColor,
+            // o TechSmith Smart Player quebra ao tentar ler essas tags ("Cannot read
+            // properties of undefined (reading 'getAttribute')"). Insere as tags se
+            // estiverem faltando. Não faz nada se elas já existirem (evita duplicar).
+            string padraoCorTagsFaltando = @"(trackName=""Captioning""[\s\S]*?</xmpDM:markers>)\s*</rdf:Description>";
+            if (Regex.IsMatch(xmlSubstituido, padraoCorTagsFaltando))
+            {
+                xmlSubstituido = Regex.Replace(
+                    xmlSubstituido,
+                    padraoCorTagsFaltando,
+                    "$1\r\n                     <tsc:fgColor xmpG:red=\"255\" xmpG:green=\"255\" xmpG:blue=\"255\"/>\r\n                     <tsc:bgColor xmpG:red=\"0\" xmpG:green=\"0\" xmpG:blue=\"0\"/>\r\n                  </rdf:Description>"
+                );
+            }
 
             // ATIVA A LEGENDA NO XML
             xmlSubstituido = Regex.Replace(xmlSubstituido, @"(<rdf:li xmpDM:name=""captionsenabled"" xmpDM:value="")[^""]*("")", "${1}true${2}", RegexOptions.IgnoreCase);
@@ -137,6 +154,8 @@ namespace CamtasiaXmlExporter
                             f.EndsWith(".php", StringComparison.OrdinalIgnoreCase))
                 .ToArray();
 
+            var utf8SemBom = new UTF8Encoding(false);
+
             foreach (var arquivo in arquivosHtml)
             {
                 string conteudo = File.ReadAllText(arquivo, Encoding.UTF8);
@@ -150,7 +169,16 @@ namespace CamtasiaXmlExporter
                         RegexOptions.IgnoreCase
                     );
 
-                    File.WriteAllText(arquivo, conteudoAtualizado, Encoding.UTF8);
+                    // Só regrava o arquivo se algo realmente mudou. Isso evita
+                    // reescrever (e potencialmente introduzir BOM/mudar encoding)
+                    // um HTML que já estava com a legenda ativada.
+                    if (conteudoAtualizado != conteudo)
+                    {
+                        // IMPORTANTE: usar UTF8 SEM BOM. "Encoding.UTF8" do .NET
+                        // grava um BOM no início do arquivo, o que pode fazer o
+                        // Smart Player / Moodle tratar o HTML como corrompido.
+                        File.WriteAllText(arquivo, conteudoAtualizado, utf8SemBom);
+                    }
                 }
             }
         }
