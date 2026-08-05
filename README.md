@@ -9,11 +9,12 @@ Plugin para o [Subtitle Edit 5](https://github.com/SubtitleEdit/subtitleedit) qu
 3. Converte cada bloco do `.srt` em um marcador de legenda no formato RTF/XMP que o Camtasia Smart Player espera.
 4. Insere esses marcadores dentro da track `Captioning` do XML (criando a track se ela não existir).
 5. Ativa a exibição de legendas (`captionsenabled="true"`) no XML e no `_player.html`.
+6. **(Novo) Exibe popups visuais nativos do Windows** para confirmar o sucesso da injeção ou alertar sobre erros críticos.
 
 ## Instalação
 
-1. Baixe o `.exe` mais recente da pasta [`CamtasiaXmlExporter/`](./CamtasiaXmlExporter) (ou compile a partir do código-fonte — veja abaixo).
-2. Copie `CamtasiaXmlExporter.exe` e `plugin.json` para:
+1. Baixe os arquivos `CamtasiaXmlExporter.exe` e `plugin.json` mais recentes na aba **[Releases](../../releases)** deste repositório.
+2. Copie os dois arquivos para a pasta de plugins do Subtitle Edit:
    ```
    C:\SubtitleEdit\Plugins\CamtasiaXmlExporter\
    ```
@@ -46,7 +47,7 @@ Isso gera um executável standalone (`CamtasiaXmlExporter.exe`) que **não depen
   "apiVersion": 1,
   "name": "Exportar para Camtasia SCORM XML",
   "description": "Atualiza as legendas diretamente no arquivo _config.xml do Camtasia Smart Player.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "Natan",
   "menu": "File",
   "minSeVersion": "5.0.0",
