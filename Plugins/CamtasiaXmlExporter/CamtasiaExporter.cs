@@ -4,11 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Windows.Forms;
 
 namespace CamtasiaXmlExporter
 {
     internal class Program
     {
+        [STAThread]
         static void Main(string[] args)
         {
             if (args.Length == 0) return;
@@ -37,19 +39,34 @@ namespace CamtasiaXmlExporter
                     if (!string.IsNullOrEmpty(subtitleFileName))
                     {
                         string? directory = Path.GetDirectoryName(subtitleFileName);
-                        if (!string.IsNullOrEmpty(directory))
+                        if (!string.IsNullOrEmpty(directory) && Directory.Exists(directory))
                         {
-                            string potentialXml = Path.Combine(directory, Path.GetFileNameWithoutExtension(subtitleFileName) + "_config.xml");
+                            // TENTATIVA 1: Busca pelo nome exato do arquivo SRT
+                            string expectedXmlName = Path.GetFileNameWithoutExtension(subtitleFileName) + "_config.xml";
+                            string potentialXml = Path.Combine(directory, expectedXmlName);
+
                             if (File.Exists(potentialXml))
                             {
                                 xmlPath = potentialXml;
+                            }
+                            else
+                            {
+                                // TENTATIVA 2: Varredura inteligente. Se o nome for diferente, 
+                                // mas existir APENAS UM arquivo _config.xml na pasta, usa ele!
+                                string[] configFiles = Directory.GetFiles(directory, "*_config.xml");
+                                if (configFiles.Length == 1)
+                                {
+                                    xmlPath = configFiles[0];
+                                }
                             }
                         }
                     }
 
                     if (string.IsNullOrEmpty(xmlPath) || !File.Exists(xmlPath))
                     {
-                        EscreverErro(responseFilePath, "Não foi possível localizar o arquivo _config.xml na mesma pasta da legenda. Verifique se o nome do .srt é igual ao do vídeo.");
+                        string erroMsg = "Não foi possível localizar o arquivo _config.xml na pasta.\n\nCertifique-se de que o nome da legenda é igual ao do vídeo, ou que a pasta contenha apenas um pacote SCORM.";
+                        EscreverErro(responseFilePath, erroMsg);
+                        MessageBox.Show(erroMsg, "Camtasia XML Exporter - Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     }
 
@@ -58,11 +75,15 @@ namespace CamtasiaXmlExporter
 
                     string okResponse = "{\"apiVersion\":1,\"status\":\"ok\",\"message\":\"XML e Player do Camtasia atualizados com sucesso!\"}";
                     File.WriteAllText(responseFilePath, okResponse, Encoding.UTF8);
+
+                    // POPUP DE SUCESSO
+                    MessageBox.Show($"As legendas foram injetadas com sucesso no arquivo:\n\n{Path.GetFileName(xmlPath)}", "Camtasia XML Exporter - Sucesso", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
             catch (Exception ex)
             {
                 EscreverErro(responseFilePath, ex.Message);
+                MessageBox.Show($"Ocorreu um erro durante a exportação:\n\n{ex.Message}", "Camtasia XML Exporter - Erro Crítico", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -115,15 +136,9 @@ namespace CamtasiaXmlExporter
                 xmlConteudo = Regex.Replace(xmlConteudo, @"(<xmpDM:Tracks>\s*<rdf:Bag>)", $"${{1}}\n{estruturaCaptioning}");
             }
 
-            // CORREÇÃO: O sinal de '<' foi removido antes de xmpDM:trackName para encontrar a tag corretamente!
             string padraoRegex = @"(xmpDM:trackName=""Captioning""[^>]*>\s*<xmpDM:markers>\s*<rdf:Seq>)([\s\S]*?)(</rdf:Seq>)";
             string xmlSubstituido = Regex.Replace(xmlConteudo, padraoRegex, $"${{1}}\n{novosMarkers.ToString()}                           ${{3}}");
 
-            // REPARO IDEMPOTENTE: se o bloco "Captioning" já existia (de uma execução
-            // anterior do plugin, antes desta correção) sem as tags tsc:fgColor/tsc:bgColor,
-            // o TechSmith Smart Player quebra ao tentar ler essas tags ("Cannot read
-            // properties of undefined (reading 'getAttribute')"). Insere as tags se
-            // estiverem faltando. Não faz nada se elas já existirem (evita duplicar).
             string padraoCorTagsFaltando = @"(trackName=""Captioning""[\s\S]*?</xmpDM:markers>)\s*</rdf:Description>";
             if (Regex.IsMatch(xmlSubstituido, padraoCorTagsFaltando))
             {
@@ -134,12 +149,10 @@ namespace CamtasiaXmlExporter
                 );
             }
 
-            // ATIVA A LEGENDA NO XML
             xmlSubstituido = Regex.Replace(xmlSubstituido, @"(<rdf:li xmpDM:name=""captionsenabled"" xmpDM:value="")[^""]*("")", "${1}true${2}", RegexOptions.IgnoreCase);
 
             File.WriteAllText(xmlPath, xmlSubstituido, new UTF8Encoding(false));
 
-            // ATIVA A LEGENDA NO HTML
             AtivarLegendasNoHtml(xmlPath);
         }
 
@@ -169,34 +182,14 @@ namespace CamtasiaXmlExporter
                         RegexOptions.IgnoreCase
                     );
 
-                    // Só regrava o arquivo se algo realmente mudou. Isso evita
-                    // reescrever (e potencialmente introduzir BOM/mudar encoding)
-                    // um HTML que já estava com a legenda ativada.
                     if (conteudoAtualizado != conteudo)
                     {
-                        // IMPORTANTE: usar UTF8 SEM BOM. "Encoding.UTF8" do .NET
-                        // grava um BOM no início do arquivo, o que pode fazer o
-                        // Smart Player / Moodle tratar o HTML como corrompido.
                         File.WriteAllText(arquivo, conteudoAtualizado, utf8SemBom);
                     }
                 }
             }
         }
 
-        /// <summary>
-        /// Converte uma linha de texto em uma string segura para ser inserida DENTRO
-        /// de um bloco RTF que por sua vez está dentro de um elemento XML.
-        ///
-        /// Escapamos '&amp;', '&lt;', '&gt;' porque o texto vai direto para dentro
-        /// de um elemento XML (não está em CDATA), e '\', '{', '}' porque são
-        /// caracteres de controle do próprio RTF.
-        ///
-        /// IMPORTANTE: acentos e outros caracteres não-ASCII (á, ã, ç, é...) são
-        /// mantidos como estão (UTF-8 puro), SEM converter para o escape RTF "\uN?".
-        /// O parser de RTF do TechSmith Smart Player não interpreta esse control
-        /// word — ele imprime "\u233?" literalmente na tela em vez do caractere
-        /// acentuado. O player espera o texto em UTF-8 direto mesmo.
-        /// </summary>
         private static string EscaparLinhaParaRtfXml(string linha)
         {
             var sb = new StringBuilder();
@@ -226,7 +219,6 @@ namespace CamtasiaXmlExporter
 
                 if (c < 0x20)
                 {
-                    // Caracteres de controle não imprimíveis: descarta.
                     continue;
                 }
 
