@@ -103,6 +103,26 @@ namespace CamtasiaXmlExporter
         {
             string xmlConteudo = File.ReadAllText(xmlPath, Encoding.UTF8);
 
+            // --- INÍCIO: Detecção de 720p ---
+            bool is720p = Regex.IsMatch(xmlConteudo, @"stDim:h=""720""") || Regex.IsMatch(xmlConteudo, @"stDim:w=""1280""");
+            int tamanhoFonte = -1;
+
+            if (is720p)
+            {
+                DialogResult result = MessageBox.Show(
+                    "Detectamos que este vídeo está na resolução 720p.\n\nDeseja definir o tamanho da fonte das legendas em 28 para não ficar muito grande na tela?",
+                    "Camtasia XML Exporter - Ajuste de Fonte",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question
+                );
+
+                if (result == DialogResult.Yes)
+                {
+                    tamanhoFonte = 28;
+                }
+            }
+            // --- FIM: Detecção de 720p ---
+
             var blocos = Regex.Matches(srtText, @"(\d+)\r?\n(\d{2}:\d{2}:\d{2}[\.,]\d{3}) --> (\d{2}:\d{2}:\d{2}[\.,]\d{3})\r?\n([\s\S]*?)(?=\r?\n\r?\n|\Z)");
 
             var novosMarkers = new StringBuilder();
@@ -147,6 +167,12 @@ namespace CamtasiaXmlExporter
                     padraoCorTagsFaltando,
                     "$1\r\n                     <tsc:fgColor xmpG:red=\"255\" xmpG:green=\"255\" xmpG:blue=\"255\"/>\r\n                     <tsc:bgColor xmpG:red=\"0\" xmpG:green=\"0\" xmpG:blue=\"0\"/>\r\n                  </rdf:Description>"
                 );
+            }
+
+            // --- Aplica o tamanho 28 da fonte apenas se o usuário tiver confirmado ---
+            if (tamanhoFonte > 0)
+            {
+                xmlSubstituido = Regex.Replace(xmlSubstituido, @"tscDM:fontSize=""\d+""", $"tscDM:fontSize=\"{tamanhoFonte}\"");
             }
 
             xmlSubstituido = Regex.Replace(xmlSubstituido, @"(<rdf:li xmpDM:name=""captionsenabled"" xmpDM:value="")[^""]*("")", "${1}true${2}", RegexOptions.IgnoreCase);

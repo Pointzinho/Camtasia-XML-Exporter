@@ -1,0 +1,13 @@
+# Pastas de compilação
+**/bin/
+**/obj/
+**/PASTA_FINAL/
+
+# Arquivos executáveis gerados na raiz
+*.exe
+*.dll
+*.pdb
+
+# VS Code e IDEs
+.vscode/
+.vs/
