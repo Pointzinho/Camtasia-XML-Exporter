@@ -1,0 +1,19 @@
+# Pastas de compilação do .NET
+bin/
+obj/
+PASTA_FINAL/
+
+# Arquivos compilados e binários
+*.exe
+*.dll
+*.pdb
+*.cache
+
+# Arquivos do VS Code e IDEs
+.vscode/
+.vs/
+*.user
+
+# Arquivos de sistema operacional
+.DS_Store
+Thumbs.db

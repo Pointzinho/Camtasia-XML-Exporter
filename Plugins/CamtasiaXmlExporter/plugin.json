@@ -1,10 +1,12 @@
 {
   "apiVersion": 1,
   "name": "Exportar para Camtasia SCORM XML",
-  "description": "Atualiza as legendas diretamente no arquivo _config.xml do Camtasia Smart Player.",
+  "description": "Atualiza as legendas diretamente no arquivo _config.xml do Camtasia Smart Player com escala dinâmica de fonte.",
   "version": "1.0.3",
   "author": "Natan",
   "menu": "File",
   "minSeVersion": "5.0.0",
-  "entry": "CamtasiaXmlExporter.exe"
+  "executables": {
+    "windows": "CamtasiaXmlExporter.exe"
+  }
 }
