@@ -103,25 +103,44 @@ namespace CamtasiaXmlExporter
         {
             string xmlConteudo = File.ReadAllText(xmlPath, Encoding.UTF8);
 
-            // --- INÍCIO: Detecção de 720p ---
-            bool is720p = Regex.IsMatch(xmlConteudo, @"stDim:h=""720""") || Regex.IsMatch(xmlConteudo, @"stDim:w=""1280""");
+            // --- INÍCIO: Detecção Inteligente de Resolução e Escala de Fonte ---
             int tamanhoFonte = -1;
+            
+            Match heightMatch = Regex.Match(xmlConteudo, @"stDim:h=""(\d+)""");
+            Match widthMatch = Regex.Match(xmlConteudo, @"stDim:w=""(\d+)""");
 
-            if (is720p)
+            if (heightMatch.Success)
             {
-                DialogResult result = MessageBox.Show(
-                    "Detectamos que este vídeo está na resolução 720p.\n\nDeseja definir o tamanho da fonte das legendas em 28 para não ficar muito grande na tela?",
-                    "Camtasia XML Exporter - Ajuste de Fonte",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Question
-                );
-
-                if (result == DialogResult.Yes)
+                if (int.TryParse(heightMatch.Groups[1].Value, out int videoHeight))
                 {
-                    tamanhoFonte = 28;
+                    int videoWidth = widthMatch.Success ? int.Parse(widthMatch.Groups[1].Value) : 0;
+                    
+                    int baseHeight = 1080;
+                    int baseFontSize = 42; // Referência para 1080p extraída da tag XML tscDM:fontSize
+
+                    // Calcula proporcionalmente usando a altura
+                    int targetFontSize = (int)Math.Round(baseFontSize * (videoHeight / (double)baseHeight));
+
+                    // Pergunta apenas se for diferente do padrão 1080p e maior que 0
+                    if (videoHeight != baseHeight && targetFontSize > 0)
+                    {
+                        string dimensaoTxt = videoWidth > 0 ? $"{videoWidth}x{videoHeight}" : $"altura {videoHeight}p";
+                        
+                        DialogResult result = MessageBox.Show(
+                            $"Detectamos que o vídeo possui a resolução de {dimensaoTxt}.\n\nO tamanho padrão da legenda é {baseFontSize}pt (para 1080p). Deseja ajustar o tamanho da fonte proporcionalmente para {targetFontSize}pt para manter a escala perfeita na tela?",
+                            "Camtasia XML Exporter - Escala de Fonte Automática",
+                            MessageBoxButtons.YesNo,
+                            MessageBoxIcon.Question
+                        );
+
+                        if (result == DialogResult.Yes)
+                        {
+                            tamanhoFonte = targetFontSize;
+                        }
+                    }
                 }
             }
-            // --- FIM: Detecção de 720p ---
+            // --- FIM: Detecção Inteligente de Resolução e Escala de Fonte ---
 
             var blocos = Regex.Matches(srtText, @"(\d+)\r?\n(\d{2}:\d{2}:\d{2}[\.,]\d{3}) --> (\d{2}:\d{2}:\d{2}[\.,]\d{3})\r?\n([\s\S]*?)(?=\r?\n\r?\n|\Z)");
 
@@ -169,7 +188,7 @@ namespace CamtasiaXmlExporter
                 );
             }
 
-            // --- Aplica o tamanho 28 da fonte apenas se o usuário tiver confirmado ---
+            // --- Aplica o tamanho novo da fonte apenas se o usuário tiver confirmado ---
             if (tamanhoFonte > 0)
             {
                 xmlSubstituido = Regex.Replace(xmlSubstituido, @"tscDM:fontSize=""\d+""", $"tscDM:fontSize=\"{tamanhoFonte}\"");
